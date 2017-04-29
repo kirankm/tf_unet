@@ -20,6 +20,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import glob
 import numpy as np
 from PIL import Image
+import cv2
 
 class BaseDataProvider(object):
     """
@@ -53,13 +54,14 @@ class BaseDataProvider(object):
         
         nx = data.shape[1]
         ny = data.shape[0]
-
+        #print(nx,ny)
         return train_data.reshape(1, ny, nx, self.channels), labels.reshape(1, ny, nx, self.n_class),
     
     def _process_labels(self, label):
         if self.n_class == 2:
             nx = label.shape[1]
             ny = label.shape[0]
+            #print (nx,ny,label.shape)
             labels = np.zeros((ny, nx, self.n_class), dtype=np.float32)
             labels[..., 1] = label
             labels[..., 0] = ~label
@@ -70,8 +72,10 @@ class BaseDataProvider(object):
     def _process_data(self, data):
         # normalization
         data = np.clip(np.fabs(data), self.a_min, self.a_max)
-        data -= np.amin(data)
-        data /= np.amax(data)
+        data -= np.mean(data)
+        #data /= np.max(data)
+        data /= 128
+        data = cv2.medianBlur(data,5)
         return data
     
     def _post_process(self, data, labels):
@@ -149,6 +153,13 @@ class ImageDataProvider(BaseDataProvider):
         self.file_idx += 1
         if self.file_idx >= len(self.data_files):
             self.file_idx = 0 
+    
+#    def _process_data(self, data):
+#        # normalization
+#        data = np.clip(np.fabs(data), self.a_min, self.a_max)
+#        data -= np.mean(data)
+#        data /= np.std(data)
+#        return data
         
     def _next_data(self):
         self._cylce_file()
@@ -157,5 +168,7 @@ class ImageDataProvider(BaseDataProvider):
         
         img = self._load_file(image_name, np.float32)
         label = self._load_file(label_name, np.bool)
-    
+        if len(label.shape) == 3:
+            label = label[:,:,0]
+        #print(img.shape, label.shape)
         return img,label

@@ -33,7 +33,7 @@ class GrayScaleDataProvider(BaseDataProvider):
         self.nx = nx
         self.ny = ny
         self.kwargs = kwargs
-        rect = kwargs.get("rectangles", False)
+        rect = kwargs.pop("rectangles", False)
         if rect:
             self.n_class=3
         
